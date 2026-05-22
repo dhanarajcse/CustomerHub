@@ -5,6 +5,8 @@ pipeline {
         BUILD_CONFIGURATION = 'Release'
         PUBLISH_DIR = 'publish'
         DEPLOY_DIR = 'C:\\inetpub\\wwwroot\\CustomerHub'
+        IIS_SITE = 'CustomerHub'
+        IIS_APP_POOL = 'CustomerHub'
     }
 
     stages {
@@ -29,16 +31,16 @@ pipeline {
         stage('Deploy to IIS') {
             steps {
                 bat '''
-                %windir%\\system32\\inetsrv\\appcmd stop apppool /apppool.name:"CustomerHub"
-                %windir%\\system32\\inetsrv\\appcmd stop site /site.name:"CustomerHub"
+                %windir%\\system32\\inetsrv\\appcmd stop apppool /apppool.name:"%IIS_APP_POOL%"
+                %windir%\\system32\\inetsrv\\appcmd stop site /site.name:"%IIS_SITE%"
 
                 powershell -Command "Start-Sleep -Seconds 5"
 
                 if not exist "%DEPLOY_DIR%" mkdir "%DEPLOY_DIR%"
                 xcopy /E /Y /I "%PUBLISH_DIR%" "%DEPLOY_DIR%"
 
-                %windir%\\system32\\inetsrv\\appcmd start apppool /apppool.name:"CustomerHub"
-                %windir%\\system32\\inetsrv\\appcmd start site /site.name:"CustomerHub"
+                %windir%\\system32\\inetsrv\\appcmd start apppool /apppool.name:"%IIS_APP_POOL%"
+                %windir%\\system32\\inetsrv\\appcmd start site /site.name:"%IIS_SITE%"
                 '''
             }
         }
