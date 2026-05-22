@@ -2,18 +2,11 @@ pipeline {
     agent any
 
     environment {
-        PROJECT_NAME = 'CustomerHub'
+        BUILD_CONFIGURATION = 'Release'
         PUBLISH_DIR = 'publish'
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/YOUR_USERNAME/CustomerHub.git'
-            }
-        }
-
         stage('Restore') {
             steps {
                 bat 'dotnet restore'
@@ -22,23 +15,24 @@ pipeline {
 
         stage('Build') {
             steps {
-                bat 'dotnet build --configuration Release --no-restore'
+                bat 'dotnet build --configuration %BUILD_CONFIGURATION% --no-restore'
             }
         }
 
         stage('Publish') {
             steps {
-                bat 'dotnet publish --configuration Release --output publish'
+                bat 'dotnet publish --configuration %BUILD_CONFIGURATION% --output %PUBLISH_DIR% --no-build'
             }
         }
+    }
 
-        stage('Deploy') {
-            steps {
-                bat '''
-                if not exist C:\\inetpub\\wwwroot\\CustomerHub mkdir C:\\inetpub\\wwwroot\\CustomerHub
-                xcopy /E /Y /I publish C:\\inetpub\\wwwroot\\CustomerHub
-                '''
-            }
+    post {
+        success {
+            echo 'CustomerHub build and publish completed successfully.'
+        }
+
+        failure {
+            echo 'CustomerHub pipeline failed. Check the console output.'
         }
     }
 }
