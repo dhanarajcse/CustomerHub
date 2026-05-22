@@ -4,6 +4,7 @@ pipeline {
     environment {
         BUILD_CONFIGURATION = 'Release'
         PUBLISH_DIR = 'publish'
+        DEPLOY_DIR = 'C:\\inetpub\\wwwroot\\CustomerHub'
     }
 
     stages {
@@ -24,15 +25,24 @@ pipeline {
                 bat 'dotnet publish --configuration %BUILD_CONFIGURATION% --output %PUBLISH_DIR% --no-build'
             }
         }
+
+        stage('Deploy to IIS') {
+            steps {
+                bat '''
+                if not exist "%DEPLOY_DIR%" mkdir "%DEPLOY_DIR%"
+                xcopy /E /Y /I "%PUBLISH_DIR%" "%DEPLOY_DIR%"
+                '''
+            }
+        }
     }
 
     post {
         success {
-            echo 'CustomerHub build and publish completed successfully.'
+            echo 'CustomerHub deployed to IIS successfully.'
         }
 
         failure {
-            echo 'CustomerHub pipeline failed. Check the console output.'
+            echo 'CustomerHub deployment failed. Check the console output.'
         }
     }
 }
