@@ -29,8 +29,13 @@ pipeline {
         stage('Deploy to IIS') {
             steps {
                 bat '''
+                %windir%\\system32\\inetsrv\\appcmd stop site /site.name:"CustomerHub"
+                timeout /t 3 /nobreak
+
                 if not exist "%DEPLOY_DIR%" mkdir "%DEPLOY_DIR%"
                 xcopy /E /Y /I "%PUBLISH_DIR%" "%DEPLOY_DIR%"
+
+                %windir%\\system32\\inetsrv\\appcmd start site /site.name:"CustomerHub"
                 '''
             }
         }
