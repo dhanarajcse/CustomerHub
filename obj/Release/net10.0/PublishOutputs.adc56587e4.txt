@@ -1,0 +1,7 @@
+E:\Project\.NET\CustomerHub\publish\CustomerHub.exe
+E:\Project\.NET\CustomerHub\publish\appsettings.Development.json
+E:\Project\.NET\CustomerHub\publish\appsettings.json
+E:\Project\.NET\CustomerHub\publish\CustomerHub.dll
+E:\Project\.NET\CustomerHub\publish\CustomerHub.deps.json
+E:\Project\.NET\CustomerHub\publish\CustomerHub.runtimeconfig.json
+E:\Project\.NET\CustomerHub\publish\CustomerHub.pdb
