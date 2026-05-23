@@ -95,3 +95,4 @@ E:\Project\.NET\CustomerHub\obj\Debug\net10.0\refint\CustomerHub.dll
 E:\Project\.NET\CustomerHub\obj\Debug\net10.0\CustomerHub.pdb
 E:\Project\.NET\CustomerHub\obj\Debug\net10.0\CustomerHub.genruntimeconfig.cache
 E:\Project\.NET\CustomerHub\obj\Debug\net10.0\ref\CustomerHub.dll
+E:\Project\.NET\CustomerHub\obj\Debug\net10.0\CustomerHub.sourcelink.json
