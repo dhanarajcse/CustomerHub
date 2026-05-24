@@ -48,8 +48,8 @@ pipeline {
                     cmd /c "net use \\\\16.171.14.84\\CustomerHubShare %EC2_PASS% /user:16.171.14.84\\%EC2_USER% /persistent:no"
                     
                     echo "Stopping IIS Application Pool to release file locks..."
-                    @rem This creates an app_offline.htm file which tells IIS to gracefully release CustomerHub.dll
-                    echo <html><body><h2>Site updating...</h2></body></html> > "\\\\16.171.14.84\\CustomerHubShare\\app_offline.htm"
+                    @rem FIX: Writing a plain-text message avoids the HTML bracket parsing error completely
+                    echo AppOfflineForDeployment > "\\\\16.171.14.84\\CustomerHubShare\\app_offline.htm"
                     timeout /t 2 >nul
                     
                     echo "Mirroring compiled application directory directly onto AWS EC2 IIS..."
