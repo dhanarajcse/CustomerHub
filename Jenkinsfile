@@ -42,7 +42,8 @@ pipeline {
                     bat """
                     @echo off
                     echo "Authenticating and opening a secure network pipeline to EC2..."
-                    net use \\\\16.171.14.84\\CustomerHubShare "%EC2_PASS%" /user:"%EC2_USER%" /persistent:no
+                    @rem FIX: Prepending .\\ forces Windows to authenticate as the local EC2 machine user
+                    net use \\\\16.171.14.84\\CustomerHubShare "%EC2_PASS%" /user:.\\"%EC2_USER%" /persistent:no
                     
                     echo "Mirroring compiled application directory directly onto AWS EC2 IIS..."
                     robocopy "%WORKSPACE%\\%PUBLISH_DIR%" "\\\\16.171.14.84\\CustomerHubShare" /MIR /R:3 /W:5
@@ -53,7 +54,7 @@ pipeline {
                 }
             }
         }
-    } // <-- FIX: This closing brace for the 'stages' block was missing!
+    } 
 
     post {
         success {
