@@ -41,13 +41,14 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'ec2-iis-credentials', passwordVariable: 'EC2_PASS', usernameVariable: 'EC2_USER')]) {
                     bat """
                     @echo off
-                    echo "Streaming compiled files over port 80 via Web Deploy Agent Service..."
+                    echo "Authenticating and opening a secure network pipeline to EC2..."
+                    net use \\\\16.171.14.84\\CustomerHubShare "%EC2_PASS%" /user:"%EC2_USER%" /persistent:no
                     
-                    "C:\\Program Files\\IIS\\Microsoft Web Deploy V3\\msdeploy.exe" ^
-                    -source:contentPath="%WORKSPACE%\\%PUBLISH_DIR%" ^
-                    -dest:contentPath="CustomerHub",computerName="http://16.171.14.84/MSDEPLOYAGENTSERVICE",username="%EC2_USER%",password="%EC2_PASS%",authType="NTLM" ^
-                    -verb:sync ^
-                    -allowUntrusted
+                    echo "Mirroring compiled application directory directly onto AWS EC2 IIS..."
+                    robocopy "%WORKSPACE%\\%PUBLISH_DIR%" "\\\\16.171.14.84\\CustomerHubShare" /MIR /R:3 /W:5
+                    
+                    echo "Cleaning up network pipeline connections..."
+                    net use \\\\16.171.14.84\\CustomerHubShare /delete /y
                     """
                 }
             }
