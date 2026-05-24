@@ -47,8 +47,16 @@ pipeline {
                     echo "Connecting directly via explicit authentication token..."
                     cmd /c "net use \\\\16.171.14.84\\CustomerHubShare %EC2_PASS% /user:16.171.14.84\\%EC2_USER% /persistent:no"
                     
+                    echo "Stopping IIS Application Pool to release file locks..."
+                    @rem This creates an app_offline.htm file which tells IIS to gracefully release CustomerHub.dll
+                    echo <html><body><h2>Site updating...</h2></body></html> > "\\\\16.171.14.84\\CustomerHubShare\\app_offline.htm"
+                    timeout /t 2 >nul
+                    
                     echo "Mirroring compiled application directory directly onto AWS EC2 IIS..."
                     robocopy "%WORKSPACE%\\%PUBLISH_DIR%" "\\\\16.171.14.84\\CustomerHubShare" /MIR /R:3 /W:5
+                    
+                    echo "Restarting IIS Web App by removing offline block..."
+                    if exist "\\\\16.171.14.84\\CustomerHubShare\\app_offline.htm" del "\\\\16.171.14.84\\CustomerHubShare\\app_offline.htm"
                     
                     echo "Cleaning up network pipeline connections..."
                     net use \\\\16.171.14.84\\CustomerHubShare /delete /y
@@ -56,7 +64,7 @@ pipeline {
                 }
             }
         }
-    } // FIXED: Added missing closing bracket for stages block
+    } 
 
     post {
         success {
