@@ -36,34 +36,21 @@ pipeline {
             }
         }
 
-        stage('Deploy to IIS') {
+        stage('Deploy to EC2 IIS') {
             steps {
-                // FIX 3: Triple single-quotes treat everything literally, changing variable syntax to standard Windows %VAR%
-                bat '''
-                @echo off
-                echo Stopping IIS application pool and site...
-                %windir%\\system32\\inetsrv\\appcmd stop apppool /apppool.name:"%IIS_APP_POOL%"
-                %windir%\\system32\\inetsrv\\appcmd stop site /site.name:"%IIS_SITE%"
-
-                echo Waiting for processes to release file locks...
-                powershell -Command "Start-Sleep -Seconds 5"
-
-                echo Deploying files to %DEPLOY_DIR%...
-                if not exist "%DEPLOY_DIR%" mkdir "%DEPLOY_DIR%"
-                
-                :: FIX 4: Robocopy replaces xcopy to safely mirror the directories and remove old, deleted files
-                robocopy "%PUBLISH_DIR%" "%DEPLOY_DIR%" /MIR /R:3 /W:5
-                
-                :: Robocopy exit codes 0-3 mean successful copy/no changes. Anything 8 or higher is a real error.
-                if %ERRORLEVEL% GEQ 8 (
-                    echo Robocopy failed with exit code %ERRORLEVEL%
-                    exit /b %ERRORLEVEL%
-                )
-
-                echo Starting IIS application pool and site...
-                %windir%\\system32\\inetsrv\\appcmd start apppool /apppool.name:"%IIS_APP_POOL%"
-                %windir%\\system32\\inetsrv\\appcmd start site /site.name:"%IIS_SITE%"
-                '''
+                // This block safely grabs the EC2 login credentials you just saved in Jenkins
+                withCredentials([usernamePassword(credentialsId: 'ec2-iis-credentials', passwordVariable: 'EC2_PASS', usernameVariable: 'EC2_USER')]) {
+                    bat """
+                    @echo off
+                    echo "Streaming compiled files straight to AWS EC2 Server IIS..."
+                    
+                    "C:\\Program Files\\IIS\\Microsoft Web Deploy V3\\msdeploy.exe" ^
+                    -source:contentPath="%WORKSPACE%\\%PUBLISH_DIR%" ^
+                    -dest:contentPath="CustomerHub",computerName="http://16.171.14.84/MSDEPLOYAGENTSERVICE",username="%EC2_USER%",password="%EC2_PASS%",authType="NTLM" ^
+                    -verb:sync ^
+                    -allowUntrusted
+                    """
+                }
             }
         }
     }
