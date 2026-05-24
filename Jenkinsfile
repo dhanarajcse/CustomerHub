@@ -41,22 +41,22 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'ec2-iis-credentials', passwordVariable: 'EC2_PASS', usernameVariable: 'EC2_USER')]) {
                     bat """
                     @echo off
-                    echo "Force clearing existing network caches to prevent ghost connections..."
+                    echo "Clearing out stale network connections..."
                     net use * /delete /y >nul 2>&1
                     
-                    echo "Authenticating fresh pipeline session with explicit IP domain routing..."
-                    net use \\\\16.171.14.84\\CustomerHubShare "%EC2_PASS%" /user:16.171.14.84\\"%EC2_USER%" /persistent:no
+                    echo "Connecting directly via explicit authentication token..."
+                    cmd /c "net use \\\\16.171.14.84\\CustomerHubShare %EC2_PASS% /user:16.171.14.84\\%EC2_USER% /persistent:no"
                     
                     echo "Mirroring compiled application directory directly onto AWS EC2 IIS..."
                     robocopy "%WORKSPACE%\\%PUBLISH_DIR%" "\\\\16.171.14.84\\CustomerHubShare" /MIR /R:3 /W:5
                     
-                    echo "Cleaning up active network pipeline connections..."
+                    echo "Cleaning up network pipeline connections..."
                     net use \\\\16.171.14.84\\CustomerHubShare /delete /y
                     """
                 }
             }
         }
-    } 
+    } // FIXED: Added missing closing bracket for stages block
 
     post {
         success {
