@@ -36,7 +36,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2 IIS') {
+       stage('Deploy to EC2 IIS') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'ec2-iis-credentials', passwordVariable: 'EC2_PASS', usernameVariable: 'EC2_USER')]) {
                     bat """
@@ -48,9 +48,10 @@ pipeline {
                     cmd /c "net use \\\\16.171.14.84\\CustomerHubShare %EC2_PASS% /user:16.171.14.84\\%EC2_USER% /persistent:no"
                     
                     echo "Stopping IIS Application Pool to release file locks..."
-                    @rem FIX: Writing a plain-text message avoids the HTML bracket parsing error completely
                     echo AppOfflineForDeployment > "\\\\16.171.14.84\\CustomerHubShare\\app_offline.htm"
-                    timeout /t 2 >nul
+                    
+                    @rem FIX: Using ping instead of timeout avoids the non-interactive redirection warning
+                    ping 127.0.0.1 -n 3 >nul
                     
                     echo "Mirroring compiled application directory directly onto AWS EC2 IIS..."
                     robocopy "%WORKSPACE%\\%PUBLISH_DIR%" "\\\\16.171.14.84\\CustomerHubShare" /MIR /R:3 /W:5
