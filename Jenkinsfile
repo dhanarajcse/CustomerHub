@@ -36,31 +36,35 @@ pipeline {
             }
         }
 
-       stage('Deploy to EC2 IIS') {
+      stage('Deploy to EC2 IIS') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'ec2-iis-credentials', passwordVariable: 'EC2_PASS', usernameVariable: 'EC2_USER')]) {
-                    bat """
-                    @echo off
-                    echo "Clearing out stale network connections..."
-                    net use * /delete /y >nul 2>&1
+                    powershell """
+                    # Create secure credentials object
+                    \$secpasswd = ConvertTo-SecureString '${EC2_PASS}' -AsPlainText -Force
+                    \$mycreds = New-Object System.Management.Automation.PSCredential ("${EC2_USER}", \$secpasswd)
                     
-                    echo "Connecting directly via explicit authentication token..."
-                    cmd /c "net use \\\\16.171.14.84\\CustomerHubShare %EC2_PASS% /user:16.171.14.84\\%EC2_USER% /persistent:no"
+                    # Create a remote session directly to your AWS EC2 instance over Port 5985
+                    \$session = New-PSSession -ComputerName "16.171.14.84" -Credential \$mycreds -Authentication Negotiate
                     
-                    echo "Stopping IIS Application Pool to release file locks..."
-                    echo AppOfflineForDeployment > "\\\\16.171.14.84\\CustomerHubShare\\app_offline.htm"
+                    Write-Output "Stopping IIS App Pool on EC2 via WinRM..."
+                    Invoke-Command -Session \$session -ScriptBlock { 
+                        New-Item -Path "C:\\inetpub\\wwwroot\\CustomerHub\\app_offline.htm" -ItemType File -Value "AppOffline" -Force 
+                    }
                     
-                    @rem FIX: Using ping instead of timeout avoids the non-interactive redirection warning
-                    ping 127.0.0.1 -n 3 >nul
+                    Write-Output "Shipping deployment binaries over secure session..."
+                    # Copy files natively over the WinRM session channel (ISPs won't block this)
+                    Copy-Item -Path "$WORKSPACE\\$PUBLISH_DIR\\*" -Destination "C:\\inetpub\\wwwroot\\CustomerHub\\" -ToSession \$session -Recurforce -Force
                     
-                    echo "Mirroring compiled application directory directly onto AWS EC2 IIS..."
-                    robocopy "%WORKSPACE%\\%PUBLISH_DIR%" "\\\\16.171.14.84\\CustomerHubShare" /MIR /R:3 /W:5
+                    Write-Output "Bringing IIS Web App back online..."
+                    Invoke-Command -Session \$session -ScriptBlock { 
+                        if (Test-Path "C:\\inetpub\\wwwroot\\CustomerHub\\app_offline.htm") { 
+                            Remove-Item "C:\\inetpub\\wwwroot\\CustomerHub\\app_offline.htm" -Force 
+                        } 
+                    }
                     
-                    echo "Restarting IIS Web App by removing offline block..."
-                    if exist "\\\\16.171.14.84\\CustomerHubShare\\app_offline.htm" del "\\\\16.171.14.84\\CustomerHubShare\\app_offline.htm"
-                    
-                    echo "Cleaning up network pipeline connections..."
-                    net use \\\\16.171.14.84\\CustomerHubShare /delete /y
+                    # Clean up active session
+                    Remove-PSSession \$session
                     """
                 }
             }
