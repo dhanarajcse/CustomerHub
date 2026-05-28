@@ -96,3 +96,9 @@ E:\Project\.NET\CustomerHub\obj\Debug\net10.0\CustomerHub.pdb
 E:\Project\.NET\CustomerHub\obj\Debug\net10.0\CustomerHub.genruntimeconfig.cache
 E:\Project\.NET\CustomerHub\obj\Debug\net10.0\ref\CustomerHub.dll
 E:\Project\.NET\CustomerHub\obj\Debug\net10.0\CustomerHub.sourcelink.json
+E:\Project\.NET\CustomerHub\bin\Debug\net10.0\publish\web.config
+E:\Project\.NET\CustomerHub\bin\Debug\net10.0\publish\appsettings.Development.json
+E:\Project\.NET\CustomerHub\bin\Debug\net10.0\publish\appsettings.json
+E:\Project\.NET\CustomerHub\bin\Debug\net10.0\publish\CustomerHub.deps.json
+E:\Project\.NET\CustomerHub\bin\Debug\net10.0\publish\CustomerHub.runtimeconfig.json
+E:\Project\.NET\CustomerHub\bin\Debug\net10.0\publish\CustomerHub.staticwebassets.endpoints.json
