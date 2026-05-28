@@ -36,13 +36,15 @@ pipeline {
             }
         }
 
-      stage('Deploy to EC2 IIS') {
+stage('Deploy to EC2 IIS') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'ec2-iis-credentials', passwordVariable: 'EC2_PASS', usernameVariable: 'EC2_USER')]) {
                     powershell """
-                    # Create secure credentials object
+                    # Create secure credentials object using explicit computer routing
                     \$secpasswd = ConvertTo-SecureString '${EC2_PASS}' -AsPlainText -Force
-                    \$mycreds = New-Object System.Management.Automation.PSCredential ("${EC2_USER}", \$secpasswd)
+                    
+                    # FIX: Prepending the remote IP forces Windows to validate against the EC2 local accounts
+                    \$mycreds = New-Object System.Management.Automation.PSCredential ("16.171.14.84\\${EC2_USER}", \$secpasswd)
                     
                     # Create a remote session directly to your AWS EC2 instance over Port 5985
                     \$session = New-PSSession -ComputerName "16.171.14.84" -Credential \$mycreds -Authentication Negotiate
@@ -54,7 +56,7 @@ pipeline {
                     
                     Write-Output "Shipping deployment binaries over secure session..."
                     # Copy files natively over the WinRM session channel (ISPs won't block this)
-                    Copy-Item -Path "$WORKSPACE\\$PUBLISH_DIR\\*" -Destination "C:\\inetpub\\wwwroot\\CustomerHub\\" -ToSession \$session -Recurforce -Force
+                    Copy-Item -Path "$WORKSPACE\\$PUBLISH_DIR\\*" -Destination "C:\\inetpub\\wwwroot\\CustomerHub\\" -ToSession \$session -Recurse -Force
                     
                     Write-Output "Bringing IIS Web App back online..."
                     Invoke-Command -Session \$session -ScriptBlock { 
