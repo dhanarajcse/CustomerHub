@@ -36,14 +36,12 @@ pipeline {
             }
         }
 
-stage('Deploy to EC2 IIS') {
+        stage('Deploy to EC2 IIS') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'ec2-iis-credentials', passwordVariable: 'EC2_PASS', usernameVariable: 'EC2_USER')]) {
                     powershell """
-                    # Create secure credentials object using explicit computer routing
+                    # Create secure credentials object
                     \$secpasswd = ConvertTo-SecureString '${EC2_PASS}' -AsPlainText -Force
-                    
-                    # FIX: Prepending the remote IP forces Windows to validate against the EC2 local accounts
                     \$mycreds = New-Object System.Management.Automation.PSCredential ("16.171.14.84\\${EC2_USER}", \$secpasswd)
                     
                     # Create a remote session directly to your AWS EC2 instance over Port 5985
@@ -55,14 +53,17 @@ stage('Deploy to EC2 IIS') {
                     }
                     
                     Write-Output "Shipping deployment binaries over secure session..."
-                    # Copy files natively over the WinRM session channel (ISPs won't block this)
                     Copy-Item -Path "$WORKSPACE\\$PUBLISH_DIR\\*" -Destination "C:\\inetpub\\wwwroot\\CustomerHub\\" -ToSession \$session -Recurse -Force
                     
-                    Write-Output "Bringing IIS Web App back online..."
+                    Write-Output "Bringing IIS Web App back online and recycling pool..."
                     Invoke-Command -Session \$session -ScriptBlock { 
                         if (Test-Path "C:\\inetpub\\wwwroot\\CustomerHub\\app_offline.htm") { 
                             Remove-Item "C:\\inetpub\\wwwroot\\CustomerHub\\app_offline.htm" -Force 
                         } 
+                        
+                        # FORCE RECYCLE: Clears out stale process memory to avoid 500 errors
+                        Import-Module WebAdministration
+                        Restart-WebAppPool -Name "CustomerHub"
                     }
                     
                     # Clean up active session
@@ -71,6 +72,7 @@ stage('Deploy to EC2 IIS') {
                 }
             }
         }
+
     } 
 
     post {
